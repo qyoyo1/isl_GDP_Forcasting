@@ -27,7 +27,7 @@ class KFold_Regression:
 		header = list(self.data_frame.columns.values)[2:]
 		# for all length combos
 		for i in range(1, len(header)+1):
-			regressor_combos = itertools.combination(header, r=i)
+			regressor_combos = itertools.combinations(header, r=i)
 			#hash length combo and iterable
 			self.regressor_models[i] = regressor_combos
 
@@ -95,8 +95,6 @@ class KFold_Regression:
 				sys.stdout.write("Progress: {}% \r".format(progress))
 				sys.stdout.flush()
 				run = run + 1
-				print(run)
-				break
 
 		self.results.to_csv('data/'+str(self.name)+'.csv', columns=self.columns)
 
