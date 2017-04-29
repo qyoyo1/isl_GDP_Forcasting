@@ -9,16 +9,21 @@ from sklearn.model_selection import cross_val_score
 import sys
 import pickle
 class KFold_Regression:
-	def __init__(self, name, data_path, k_fold):
+	def __init__(self, name, data_path, pred_length):
 		self.name = name
+		self.pred_length = pred_length
 		# Read in csv file store as static data_frame (do not alter this dataframe)
 		self.data_frame = pd.read_csv(data_path)
 		# Will convert targets to log diff
 		self.targets = None
 		# regressor_models will be (key,iterable) pair. Key=num(regressors), iterable=list of combos of regressors
 		self.regressor_models = {}
+
+		self.pred_l = []
+		for i in range(1, self.pred_length+1):
+			self.pred_l.append(i)
 		
-		self.columns = ['intercept'] + list(self.data_frame.columns.values)[2:]
+		self.columns = self.pred_l + ['intercept'] + list(self.data_frame.columns.values)[2:]
 		
 		self.results = pd.DataFrame(columns=self.columns)
 
@@ -58,6 +63,7 @@ class KFold_Regression:
 	def regress(self, data, normalize=False, njobs=1):
 		#collect targets from data
 		target = data['Target']
+		#print(type(target))
 
 		#remove targets from regressors
 		X = data.drop('Target', axis=1)
@@ -68,10 +74,10 @@ class KFold_Regression:
 		#calculate scores with cross validation kfold=k
 		lm.fit(X, target)
 
-		return lm
+		return lm, X
 
 	def mass_regress(self):
-		total = np.power(2, len(self.columns))
+		total = np.power(2, len(self.columns) - self.pred_length - 1)
 		print("total runs: " + str(total))
 		#for each length type combination
 		run=1
@@ -84,14 +90,21 @@ class KFold_Regression:
 				data = self.get_data(each_model)
 				#get score
 
-				lm = self.regress(data)
+				lm, X= self.regress(data)
+
+
+				prediction = lm.predict(X)[:self.pred_length]
+
 
 				intercept = [lm.intercept_]
+
 				coefficients = lm.coef_.tolist()
 
-				columns = ['intercept'] + each_model
+				columns = self.pred_l + ['intercept'] + each_model
 
-				results = intercept + coefficients
+				results = prediction.tolist() + intercept
+
+				results = results + coefficients
 
 				print(results)
 
@@ -151,7 +164,7 @@ class KFold_Regression:
 
 
 def main():
-	data_frame = KFold_Regression('Test', 'data/Iceland.csv', 8)
+	data_frame = KFold_Regression('results', 'data/data.csv', 8)
 	
 	data_frame.generate_combos()
 	
